@@ -1,0 +1,49 @@
+readme: |-
+  Data augumentationなしの画像1000枚での学習で，最後から50件が検証データで他が学習データ
+
+num_classes: 2  # Include background
+batch_size: 2
+num_epochs: 10
+pretrained: True
+
+optimizer:
+  lr: 0.005
+  momentum: 0.9
+  weight_decay: 0.0005
+
+scheduler:
+  T_max: 10  # epoch数と同じ
+  eta_min: 0.00005
+
+albumentations:
+  train:
+    __version__: '0.4.6'
+    transform:
+      __class_fullname__: 'albumentations.core.composition.Compose'
+      p: 1.0
+      transforms:
+        - __class_fullname__: 'albumentations.augmentations.transforms.Normalize'
+          mean: [0.485, 0.456, 0.406]
+          std: [0.229, 0.224, 0.225]
+          max_pixel_value: 255.0
+          always_apply: False
+          p: 1.0
+        - __class_fullname__: 'albumentations.augmentations.transforms.HorizontalFlip'
+          always_apply: False
+          p: 0.5
+      - __class_fullname__: albumentations.augmentations.transforms.RandomBrightness
+        always_apply: false
+        limit: 0.2
+        p: 0.5
+  eval:
+    __version__: '0.4.6'
+    transform:
+      __class_fullname__: 'albumentations.core.composition.Compose'
+      p: 1.0
+      transforms:
+        - __class_fullname__: 'albumentations.augmentations.transforms.Normalize'
+          mean: [0.485, 0.456, 0.406]
+          std: [0.229, 0.224, 0.225]
+          max_pixel_value: 255.0
+          always_apply: False
+          p: 1.0
