@@ -81,20 +81,15 @@ class BoxIoUTests(unittest.TestCase):
         self.assertAlmostEqual(iou, 0.)
 
 
-class BoxesMeanIoUTests(unittest.TestCase):
+class BBoxesMeanIoUTests(unittest.TestCase):
 
     def test_simple(self):
-        # (xmin, ymin, xmax, ymax)
-        gt_boxes: List[torch.Tensor] = [
-            torch.Tensor([0, 10, 10, 20]),
-            torch.Tensor([0, 10, 10, 20]),
-        ]
-        pred_boxes: List[torch.Tensor] = [
-            torch.Tensor([0, 10, 10, 20]),
-            torch.Tensor([0, 10, 10, 20]),
-        ]
-        iou: float = metrics.boxes_mean_iou(gt_boxes, pred_boxes)
-
+        gt_bboxes, pred_bboxes, _, _, gt_labels, pred_labels, pred_scores = \
+            get_data()
+        iou: float = metrics.bboxes_mean_iou(
+            gt_bboxes, gt_labels, pred_bboxes, pred_labels, pred_scores,
+            iou_threshold=0.5, score_threshold=0.0
+        )
         self.assertIsInstance(iou, float)
         self.assertAlmostEqual(iou, 1.0)
 
@@ -108,16 +103,21 @@ def get_data():
         torch.Tensor([0, 10, 10, 20]),
         torch.Tensor([0, 10, 10, 20]),
     ]
+    gt_masks: torch.Tensor = torch.zeros((2, 30, 30))
+    pred_masks: torch.Tensor = torch.zeros((2, 1, 30, 30))
     gt_labels: torch.Tensor = torch.ones(2)
     pred_labels: torch.Tensor = torch.ones(2)
     pred_scores: torch.Tensor = torch.Tensor([0.9, 0.8])
-    return gt_bboxes, pred_bboxes, gt_labels, pred_labels, pred_scores
+    return (
+        gt_bboxes, pred_bboxes, gt_masks, pred_masks, gt_labels, pred_labels,
+        pred_scores
+    )
 
 
 class ComputeMeanAveragePrecisionTests(unittest.TestCase):
 
     def test_simple(self):
-        gt_bboxes, pred_bboxes, gt_labels, pred_labels, pred_scores = \
+        gt_bboxes, pred_bboxes, _, _, gt_labels, pred_labels, pred_scores = \
             get_data()
         mean_ap: float = metrics.compute_mean_average_precision(
             gt_bboxes, gt_labels, pred_bboxes, pred_labels, pred_scores
@@ -127,7 +127,7 @@ class ComputeMeanAveragePrecisionTests(unittest.TestCase):
         self.assertIsInstance(mean_ap, float)
 
     def test_map_is_not_one(self):
-        gt_bboxes, pred_bboxes, gt_labels, pred_labels, pred_scores = \
+        gt_bboxes, pred_bboxes, _, _, gt_labels, pred_labels, pred_scores = \
             get_data()
         gt_bboxes[0] = torch.Tensor([20, 20, 30, 40])
 
