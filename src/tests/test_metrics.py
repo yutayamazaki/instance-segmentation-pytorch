@@ -6,6 +6,26 @@ import torch
 import metrics
 
 
+def get_data():
+    gt_bboxes: List[torch.Tensor] = [
+        torch.Tensor([0, 10, 10, 20]),
+        torch.Tensor([0, 10, 10, 20]),
+    ]
+    pred_bboxes: List[torch.Tensor] = [
+        torch.Tensor([0, 10, 10, 20]),
+        torch.Tensor([0, 10, 10, 20]),
+    ]
+    gt_masks: torch.Tensor = torch.zeros((2, 30, 30))
+    pred_masks: torch.Tensor = torch.zeros((2, 1, 30, 30))
+    gt_labels: torch.Tensor = torch.ones(2)
+    pred_labels: torch.Tensor = torch.ones(2)
+    pred_scores: torch.Tensor = torch.Tensor([0.9, 0.8])
+    return (
+        gt_bboxes, pred_bboxes, gt_masks, pred_masks, gt_labels, pred_labels,
+        pred_scores
+    )
+
+
 class BoxMatchingTests(unittest.TestCase):
 
     def test_simple(self):
@@ -51,23 +71,38 @@ class MaskIoUTests(unittest.TestCase):
         self.assertAlmostEqual(iou, 1.0)
 
 
-class MaskMeanIoUTests(unittest.TestCase):
+class MasksMeanIoUTests(unittest.TestCase):
 
     def test_simple(self):
-        gt_masks: List[torch.Tensor] = torch.zeros((2, 3, 3))
-        pred_masks: List[torch.Tensor] = torch.zeros((2, 3, 3))
+        gt_bboxes, pred_bboxes, gt_masks, pred_masks, gt_labels, \
+            pred_labels, pred_scores = get_data()
+        gt_masks[0] = 1
+        pred_masks[0] = 1
+        mean_iou: float = metrics.masks_mean_iou(
+            gt_bboxes, gt_masks, gt_labels, pred_bboxes, pred_masks,
+            pred_labels, pred_scores
+        )
 
-        iou = metrics.mask_mean_iou(gt_masks, pred_masks)
-        self.assertIsInstance(iou, float)
-        self.assertAlmostEqual(iou, 0.0)
+        self.assertIsInstance(mean_iou, float)
+        self.assertAlmostEqual(mean_iou, 0.5)
+
+    def test_iou_zeros(self):
+        gt_bboxes, pred_bboxes, gt_masks, pred_masks, gt_labels, \
+            pred_labels, pred_scores = get_data()
+        mean_iou: float = metrics.masks_mean_iou(
+            gt_bboxes, gt_masks, gt_labels, pred_bboxes, pred_masks,
+            pred_labels, pred_scores
+        )
+
+        self.assertAlmostEqual(mean_iou, 0.0)
 
 
-class BoxIoUTests(unittest.TestCase):
+class BBoxIoUTests(unittest.TestCase):
 
     def test_same_bbox_equal_to_one(self):
         # (xmin, ymin, xmax, ymax)
         bbox: torch.Tensor = torch.Tensor([0, 10, 10, 20])
-        iou: float = metrics.box_iou(bbox, bbox)
+        iou: float = metrics.bbox_iou(bbox, bbox)
 
         self.assertIsInstance(iou, float)
         self.assertAlmostEqual(iou, 1.)
@@ -76,7 +111,7 @@ class BoxIoUTests(unittest.TestCase):
         # (xmin, ymin, xmax, ymax)
         bbox_a: torch.Tensor = torch.Tensor([0, 10, 10, 20])
         bbox_b: torch.Tensor = torch.Tensor([10, 20, 20, 25])
-        iou: float = metrics.box_iou(bbox_a, bbox_b)
+        iou: float = metrics.bbox_iou(bbox_a, bbox_b)
 
         self.assertAlmostEqual(iou, 0.)
 
@@ -92,26 +127,6 @@ class BBoxesMeanIoUTests(unittest.TestCase):
         )
         self.assertIsInstance(iou, float)
         self.assertAlmostEqual(iou, 1.0)
-
-
-def get_data():
-    gt_bboxes: List[torch.Tensor] = [
-        torch.Tensor([0, 10, 10, 20]),
-        torch.Tensor([0, 10, 10, 20]),
-    ]
-    pred_bboxes: List[torch.Tensor] = [
-        torch.Tensor([0, 10, 10, 20]),
-        torch.Tensor([0, 10, 10, 20]),
-    ]
-    gt_masks: torch.Tensor = torch.zeros((2, 30, 30))
-    pred_masks: torch.Tensor = torch.zeros((2, 1, 30, 30))
-    gt_labels: torch.Tensor = torch.ones(2)
-    pred_labels: torch.Tensor = torch.ones(2)
-    pred_scores: torch.Tensor = torch.Tensor([0.9, 0.8])
-    return (
-        gt_bboxes, pred_bboxes, gt_masks, pred_masks, gt_labels, pred_labels,
-        pred_scores
-    )
 
 
 class ComputeMeanAveragePrecisionTests(unittest.TestCase):
